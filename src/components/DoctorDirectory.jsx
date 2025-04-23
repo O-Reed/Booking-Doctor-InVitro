@@ -8,16 +8,16 @@ import FilterBar from "./FilterBar";
 import { specialties } from "../data/doctors";
 
 function DoctorDirectory({ doctors, onBook, onInsuranceFilterChange, insuranceFilter }) {
-  const [selectedSpecialty, setSelectedSpecialty] = useState("All");
+  const [selectedSpecialties, setSelectedSpecialties] = useState(["All"]);
   const [selectedDate, setSelectedDate] = useState("any");
   const [currentPage, setCurrentPage] = useState(1);
   const doctorsPerPage = 6; // Number of doctors to show per page
 
   // Filter doctors based on criteria
   const filteredDoctors = doctors.filter(doctor => {
-    // Filter by specialty
-    const specialtyMatch = selectedSpecialty === "All" || 
-                          doctor.specialty === selectedSpecialty;
+    // Filter by specialty - either 'All' is selected, or this doctor's specialty is in the selected specialties
+    const specialtyMatch = selectedSpecialties.includes("All") || 
+                          selectedSpecialties.includes(doctor.specialty);
     
     // Filter by date if a specific date was selected
     let dateMatch = true;
@@ -33,7 +33,7 @@ function DoctorDirectory({ doctors, onBook, onInsuranceFilterChange, insuranceFi
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedSpecialty, selectedDate, insuranceFilter]);
+  }, [selectedSpecialties, selectedDate, insuranceFilter]);
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredDoctors.length / doctorsPerPage);
@@ -54,8 +54,8 @@ function DoctorDirectory({ doctors, onBook, onInsuranceFilterChange, insuranceFi
     <div>
       <FilterBar
         specialties={specialties}
-        selected={selectedSpecialty}
-        onChange={setSelectedSpecialty}
+        selectedSpecialties={selectedSpecialties}
+        onSpecialtiesChange={setSelectedSpecialties}
         onDateChange={setSelectedDate}
         insuranceFilter={insuranceFilter}
         onInsuranceChange={onInsuranceFilterChange}
@@ -72,39 +72,77 @@ function DoctorDirectory({ doctors, onBook, onInsuranceFilterChange, insuranceFi
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5 mt-3 sm:mt-4">
             {currentDoctors.map((doc) => (
-              <DoctorCard key={doc.id} doctor={doc} onBook={onBook} />
+              <div key={doc.id} className="transition duration-300 hover:transform hover:translate-y-[-2px]">
+                <DoctorCard doctor={doc} onBook={onBook} />
+              </div>
             ))}
           </div>
           
-          {/* Pagination Controls */}
+          {/* Fully Responsive Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex justify-between items-center mt-6 pt-4 border-t border-border">
-              <div className="text-sm text-muted-foreground">
-                Showing <span className="font-medium text-foreground">{indexOfFirstDoctor + 1}-{Math.min(indexOfLastDoctor, filteredDoctors.length)}</span> of <span className="font-medium text-foreground">{filteredDoctors.length}</span> specialists
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-between items-center gap-2 sm:gap-4 mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-border/60">
+              {/* Results summary - visible on sm+ screens */}
+              <div className="hidden sm:flex items-center text-xs sm:text-sm text-muted-foreground">
+                <span className="bg-muted/30 px-2 py-1 rounded mr-2 font-medium text-foreground">{indexOfFirstDoctor + 1}-{Math.min(indexOfLastDoctor, filteredDoctors.length)}</span> 
+                of {filteredDoctors.length} specialists
               </div>
-              <div className="flex items-center space-x-2">
+              
+              {/* Touch-friendly pagination controls */}
+              <div className="flex justify-center w-full sm:w-auto items-center">
                 <Button 
                   variant="outline" 
-                  size="sm" 
+                  size="icon"
+                  className="h-7 w-7 sm:h-8 sm:w-8 rounded-full border-muted-foreground/20 hover:bg-muted/60 transition-colors"
                   onClick={goToPreviousPage} 
                   disabled={currentPage === 1}
                   aria-label="Previous page"
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </Button>
-                <div className="text-sm font-medium">
-                  Page {currentPage} of {totalPages}
+                
+                {/* Page indicator with responsive text */}
+                <div className="flex items-center space-x-1.5 mx-2 sm:mx-3">
+                  {/* On mobile, show dots for pages */}
+                  <div className="flex space-x-1 sm:hidden">
+                    {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
+                      // Logic to show at most 5 dots with current page centered
+                      let pageNum = 1;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;  // Show all pages if 5 or fewer
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;  // Show first 5 pages
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;  // Show last 5 pages
+                      } else {
+                        pageNum = currentPage - 2 + i;  // Center current page
+                      }
+                      
+                      return (
+                        <div 
+                          key={i} 
+                          className={`h-1.5 w-1.5 rounded-full ${currentPage === pageNum ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+                        />
+                      );
+                    })}
+                  </div>
+                  
+                  {/* On larger screens, show actual page numbers */}
+                  <div className="hidden sm:block text-sm font-medium text-center min-w-10">
+                    {currentPage} / {totalPages}
+                  </div>
                 </div>
+                
                 <Button 
                   variant="outline" 
-                  size="sm" 
+                  size="icon"
+                  className="h-7 w-7 sm:h-8 sm:w-8 rounded-full border-muted-foreground/20 hover:bg-muted/60 transition-colors"
                   onClick={goToNextPage} 
                   disabled={currentPage === totalPages}
                   aria-label="Next page"
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </Button>
               </div>
             </div>

@@ -28,7 +28,8 @@ function App() {
   
   // Create filtered doctors list here instead of in the store
   const filteredDoctors = React.useMemo(() => {
-    return insuranceFilter 
+    // Check for both empty string and 'all' value (the no-filter cases)
+    return insuranceFilter && insuranceFilter !== 'all'
       ? doctors.filter(doctor => doctor.insurance && doctor.insurance.includes(insuranceFilter))
       : doctors;
   }, [doctors, insuranceFilter]);
@@ -97,10 +98,6 @@ function App() {
             />
           </div>
           <div className="bg-white shadow-sm border border-border/50 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Icons.appointments className="w-5 h-5 text-accent" />
-              Your Appointments
-            </h2>
             <AppointmentsSummary appointments={appointments} onDelete={handleDeleteAppointment} />
           </div>
         </div>
@@ -122,13 +119,7 @@ function App() {
             </>
           )}
           {activeTab === 'appointments' && (
-            <>
-              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                <Icons.appointments className="w-5 h-5 text-accent" />
-                Your Appointments
-              </h2>
-              <AppointmentsSummary appointments={appointments} onDelete={handleDeleteAppointment} />
-            </>
+            <AppointmentsSummary appointments={appointments} onDelete={handleDeleteAppointment} />
           )}
         </div>
       </div>
